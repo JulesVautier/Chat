@@ -26,7 +26,7 @@ app.config(['$stateProvider','$urlRouterProvider',function($stateProvider,$urlRo
         }
     })
     .state('loggedin',{
-        url:'/login',
+        url:'/chat',
         views:{
             'body':{
                 templateUrl:'/views/chat.html',
@@ -37,8 +37,6 @@ app.config(['$stateProvider','$urlRouterProvider',function($stateProvider,$urlRo
 }]);
 
 
-
-
 app.directive('myEnter', function () {
     return function (scope, element, attrs) {
         element.bind("keydown keypress", function (event) {
@@ -46,7 +44,6 @@ app.directive('myEnter', function () {
                 scope.$apply(function (){
                     scope.$eval(attrs.myEnter);
                 });
-
                 event.preventDefault();
             }
         });
@@ -65,20 +62,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
     socket.on('handle', function(data) {
         $scope.user = data;
         console.log("Get handle : "+$scope.user);
-    });
-
-
-
-    socket.on('friend_list', function(data) {
-        console.log("Friends list : "+data);
-        $scope.$apply(function () {
-            $scope.allfriends.push.apply($scope.allfriends,data);
-        });
-        console.log("Friends list : "+$scope.allfriends);
-    });
-
-    socket.on('pending_list', function(data) {
-
     });
 
     socket.on('users', function(data) {
@@ -106,79 +89,10 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
         });
     });
 
-    $scope.confirm=function(){
-        var data = {
-            "friend_handle":$scope.friend,
-            "my_handle":$scope.user
-        };
-
-//        var config = {
-//            headers : {
-//                'Content-Type': 'application/json'
-//            }
-//        };
-
-        $http({method: 'POST',url:'http://'+url+'/friend_request',data})//, headers:config})
-            .success(function (data) {
-            console.log(data)
-        })
-            .error(function (data) {
-            //add error handling
-            console.log(data)
-        });
-    };
-
-    $scope.showConfirm = function(data) {
-        // Appending dialog to document.body to cover sidenav in docs app
-        var confirm = $mdDialog.confirm()
-        .title(" connection request ")
-        .textContent(data.my_handle+' wants to connect.Do you want to Connect?')
-        .ariaLabel('Lucky day')
-        .ok('Ok')
-        .cancel('No');
-
-        $mdDialog.show(confirm).then(function() {
-            data['confirm']="Yes";
-            $http({method: 'POST',url:'http://'+url+'/friend_request/confirmed', data//, headers:{
-                //'Content-Type': 'application/json'
-            //}
-            })
-        }, function() {
-            data['confirm']="No";
-
-            $http({method: 'POST',url:'http://'+url+'/friend_request/confirmed', data//, headers:{
-            //    'Content-Type': 'application/json'
-            //}
-            })
-        });
-    };
 
     socket.on('message', function(data) {
         $scope.showConfirm(data);
     });
-
-    socket.on('friend', function(data) {
-        console.log("Connection Established"+data);
-        $scope.$apply(function () {
-            if (!$scope.online_friends.includes(data)){
-                console.log(data);
-                $scope.online_friends.push(data);
-                $scope.users.splice($scope.users.indexOf(data),1);
-            }
-
-        });
-    });
-//
-//    socket.on('all_friend_list', function(data) {
-//        $scope.$apply(function () {
-//            $scope.allfriends.push.apply($scope.allfriends,data);
-//        });
-//    });
-//
-
-    $scope.friend_request = function(user) {
-        $scope.friend = user;
-    };
 
     var getDate=function(){
         date = new Date();
@@ -192,7 +106,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
         return form_date;
     }
 
-
     socket.on('group', function(data) {
         var div = document.createElement('div');
         if(data.split("#*@")[1]!=$scope.user){
@@ -201,7 +114,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
                             <span class="direct-chat-name pull-right">'+data.split("#*@")[1]+'</span>\
                             <span class="direct-chat-timestamp pull-left">'+getDate()+'</span>\
                             </div>\
-                            <img class="direct-chat-img" src="" alt="message user image">\
                             <div class="direct-chat-text">'
                             +data.split("#*@")[0]+
                             '</div>\
@@ -218,7 +130,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
                         <span class="direct-chat-name pull-left">'+$scope.user+'</span>\
                         <span class="direct-chat-timestamp pull-right">'+getDate()+'</span>\
                         </div>\
-                        <img class="direct-chat-img" src=""\ alt="message user image">\
                         <div class="direct-chat-text">'
                         +message+
                         '</div>\
@@ -256,7 +167,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
                         <span class="direct-chat-name pull-right    ">'+data.split("#*@")[2]+'</span>\
                         <span class="direct-chat-timestamp pull-left">'+getDate()+'</span>\
                         </div>\
-                        <img class="direct-chat-img" src="" alt="message user image">\
                         <div class="direct-chat-text">'
                         +data.split("#*@")[1]+
                         '</div>\
@@ -282,7 +192,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
                         <span class="direct-chat-name pull-left">'+$scope.user+'</span>\
                         <span class="direct-chat-timestamp pull-right">'+getDate()+'</span>\
                         </div>\
-                        <img class="direct-chat-img" src=""\ alt="message user image">\
                         <div class="direct-chat-text">'
                         +message+
                         '</div>\
@@ -293,7 +202,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
         insertMessage($scope.user,chat,message);
         $scope.message=null;
     }
-
 
     popups=[];
 
@@ -360,41 +268,6 @@ app.controller('myController',['$scope','socket','$http','$mdDialog','$compile',
         if(localStorage.getItem(chat_friend)!==null){
             $scope.messages[chat_friend] = JSON.parse(localStorage.getItem(chat_friend));
         }
-        if($scope.messages[chat_friend] != undefined){
-            for(var i=0; i<$scope.messages[chat_friend].length; i++){
-                console.log($scope.messages[chat_friend][i].sender);
-                if($scope.messages[chat_friend][i].sender==$scope.user){
-                    div = document.createElement('div');
-                    div.innerHTML='<div class="direct-chat-msg"> \
-<div class="direct-chat-info clearfix">\
-<span class="direct-chat-name pull-left">'+$scope.messages[chat_friend][i].sender+'</span>\
-<span class="direct-chat-timestamp pull-right">'+$scope.messages[chat_friend][i].date+'</span>\
-</div>\
-<img class="direct-chat-img" src=""\ alt="message user image">\
-<div class="direct-chat-text">'
-    +$scope.messages[chat_friend][i].msg+
-    '</div>\
-</div>';
-                    document.getElementById(chat_friend).appendChild(div);
-                    document.getElementById(chat_friend).scrollTop=document.getElementById(chat_friend).scrollHeight;
-                }
-                else{
-                    div = document.createElement('div');
-                    div.innerHTML='<div class="direct-chat-msg right">\
-<div class="direct-chat-info clearfix">\
-<span class="direct-chat-name pull-right    ">'+$scope.messages[chat_friend][i].sender+'</span>\
-<span class="direct-chat-timestamp pull-left">'+$scope.messages[chat_friend][i].date+'</span>\
-</div>\
-<img class="direct-chat-img" src="" alt="message user image">\
-<div class="direct-chat-text">'
-    +$scope.messages[chat_friend][i].msg+
-    '</div>\
-</div>';
-                    document.getElementById(chat_friend).appendChild(div);
-                    document.getElementById(chat_friend).scrollTop=document.getElementById(chat_friend).scrollHeight;
-                }
-            }
-        }
         console.log($scope.online_friends);
 //        $compile(body)($scope);
         popups.push(chat_friend);
@@ -446,30 +319,12 @@ app.controller('registerController',['$scope','encrypt','$http','$state',functio
     url= location.host;
 
     $scope.user={
-        'name':'',
         'handle':'',
-        'password':'',
-        'email':'',
-        'phone':''
     };
 
     $scope.login_data={
         'handle':'',
-        'password':''
     };
-
-    $scope.Register = function(){
-        $scope.user.password=encrypt.hash($scope.user.password);
-
-        $http({method: 'POST',url:'http://'+url+'/register', data:$scope.user})//, headers:config})
-            .success(function (data) {
-            console.log(data)
-        })
-            .error(function (data) {
-            //add error handling
-            console.log(data)
-        });
-    }
 
     $scope.login = function(){
         console.log("login");
